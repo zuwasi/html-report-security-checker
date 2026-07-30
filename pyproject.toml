@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "html-report-security-checker"
+version = "1.0.0"
+description = "Scan AI-generated HTML reports and presentations for security risks before publishing"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [{name = "Engineering Software Lab", email = "contact@eswlab.com"}]
+keywords = ["html", "security", "ai", "secrets", "sast", "csp", "sri", "prompt-leakage", "privacy", "scanner"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.scripts]
+html-security-checker = "html_security_checker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/zuwasi/html-report-security-checker"
+Repository = "https://github.com/zuwasi/html-report-security-checker"
+Documentation = "https://github.com/zuwasi/html-report-security-checker#readme"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

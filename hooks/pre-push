@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if ! python -m html_security_checker . --fail-on-warning; then
+    echo "Error: HTML security checks failed. Push blocked." >&2
+    exit 1
+fi
+
+echo "HTML security checks passed."

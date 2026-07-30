@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+html_files=$(git diff --cached --name-only --diff-filter=ACM | grep -i '\.html$' || true)
+
+if [ -z "$html_files" ]; then
+    exit 0
+fi
+
+failed=0
+while IFS= read -r file; do
+    if ! python -m html_security_checker "$file"; then
+        echo "Security check failed for $file" >&2
+        failed=1
+    fi
+done <<< "$html_files"
+
+if [ "$failed" -ne 0 ]; then
+    echo "Error: HTML security checks failed. Commit blocked." >&2
+    exit 1
+fi
+
+echo "HTML security checks passed."
