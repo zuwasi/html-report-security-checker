@@ -329,5 +329,52 @@ def test_check_content_matches_check_file() -> None:
         assert f.line_number == c.line_number
 
 
+def test_gui_file_content() -> None:
+    """Verify /api/file-content returns file contents for the editor."""
+    sample = SAMPLES_DIR / "leaked_secrets.html"
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/file-content", {
+            "path": str(sample),
+        })
+    data = json.loads(body)
+    assert status == 200
+    assert "sk-proj" in data["content"]
+
+
+def test_gui_file_content_not_found() -> None:
+    """Verify /api/file-content returns 404 for missing files."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/file-content", {
+            "path": str(SAMPLES_DIR / "nonexistent.html"),
+        })
+    assert status == 404
+    assert json.loads(body)["error"] == "File not found"
+
+
+def test_gui_file_save(tmp_path) -> None:
+    """Verify /api/file-save writes content back to disk."""
+    test_file = tmp_path / "editable.html"
+    test_file.write_text("<p>original</p>", encoding="utf-8")
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/file-save", {
+            "path": str(test_file),
+            "content": "<p>fixed</p>",
+        })
+    data = json.loads(body)
+    assert status == 200
+    assert data["ok"] is True
+    assert test_file.read_text(encoding="utf-8") == "<p>fixed</p>"
+
+
+def test_gui_file_save_not_found() -> None:
+    """Verify /api/file-save returns 404 for missing files."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/file-save", {
+            "path": str(SAMPLES_DIR / "ghost.html"),
+            "content": "test",
+        })
+    assert status == 404
+
+
 # Keep imports required by the public GUI API contract covered by this module.
 assert Checker and start_gui
