@@ -25,8 +25,11 @@ jobs:
           - os: ubuntu-latest
             artifact: html-security-checker-linux-x64
             archive: tar.gz
-          - os: macos-latest
+          - os: macos-13
             artifact: html-security-checker-macos-x64
+            archive: tar.gz
+          - os: macos-latest
+            artifact: html-security-checker-macos-arm64
             archive: tar.gz
 
     runs-on: ${{ matrix.os }}
@@ -111,7 +114,8 @@ jobs:
             |----------|------|
             | Windows x64 | `html-security-checker-windows-x64.exe.zip` |
             | Linux x64 | `html-security-checker-linux-x64.tar.gz` |
-            | macOS x64 | `html-security-checker-macos-x64.tar.gz` |
+            | macOS x64 (Intel) | `html-security-checker-macos-x64.tar.gz` |
+            | macOS ARM64 (Apple Silicon) | `html-security-checker-macos-arm64.tar.gz` |
 
             ## Quick Start
 
@@ -120,10 +124,16 @@ jobs:
             html-security-checker-windows-x64.exe path/to/report.html
             ```
 
-            ### Linux / macOS
+            ### Linux / macOS (Intel)
             ```
             tar xzf html-security-checker-linux-x64.tar.gz
             ./html-security-checker-linux-x64 path/to/report.html
+            ```
+
+            ### macOS (Apple Silicon)
+            ```
+            tar xzf html-security-checker-macos-arm64.tar.gz
+            ./html-security-checker-macos-arm64 path/to/report.html
             ```
 
             ## The 9 Security Checks
@@ -141,6 +151,12 @@ jobs:
             | SEC-09 | Unversioned CDN | Warning |
 
             No Python installation required. The executable is fully self-contained.
+
+            ## What's New in v1.1.0
+
+            - **Web GUI**: Launch with `--gui` to scan HTML files visually in your browser
+            - **Email alerts**: Send scan results via SMTP (opt-in only, never automatic)
+            - **Cross-platform**: Now builds for macOS Intel and Apple Silicon
 
             ---
             [Presentation: An Answer to Tannenbaum's Concern](https://zuwasi.github.io/Public-html-pages/answer-to-tannenbaum-concern.html)

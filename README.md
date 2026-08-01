@@ -13,6 +13,12 @@ Built by the [Engineering Software Lab (ESL)](https://eswlab.com), the checker i
 📖 See the presentation that explains the full story:  
 https://zuwasi.github.io/Public-html-pages/answer-to-tannenbaum-concern.html
 
+## What's New in v1.1.0
+
+- **🖥️ Web GUI**: Scan HTML files visually in your browser with `--gui`
+- **📧 Email alerts**: Send scan results via SMTP (strictly opt-in, never automatic)
+- **🍎 macOS Apple Silicon**: Native ARM64 builds alongside Intel x64
+
 ## ⚠️ The Self-Attribution Problem: Why Not Just Ask AI to Review Its Own Output?
 
 **If Claude (or ChatGPT) generated the HTML, asking the same AI to review it is like asking a developer to review their own code — they share the same blind spots in both roles.**
@@ -97,7 +103,8 @@ Download the pre-built binary for your platform from [GitHub Releases](https://g
 |----------|----------|
 | Windows x64 | [html-security-checker-windows-x64.exe.zip](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-windows-x64.exe.zip) |
 | Linux x64 | [html-security-checker-linux-x64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-linux-x64.tar.gz) |
-| macOS x64 | [html-security-checker-macos-x64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-macos-x64.tar.gz) |
+| macOS x64 (Intel) | [html-security-checker-macos-x64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-macos-x64.tar.gz) |
+| macOS ARM64 (Apple Silicon) | [html-security-checker-macos-arm64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-macos-arm64.tar.gz) |
 
 ### Windows
 
@@ -117,10 +124,20 @@ chmod +x html-security-checker-linux-x64
 
 ### macOS
 
+Intel x64:
+
 ```bash
 tar xzf html-security-checker-macos-x64.tar.gz
 chmod +x html-security-checker-macos-x64
 ./html-security-checker-macos-x64 path/to/report.html
+```
+
+Apple Silicon (ARM64):
+
+```bash
+tar xzf html-security-checker-macos-arm64.tar.gz
+chmod +x html-security-checker-macos-arm64
+./html-security-checker-macos-arm64 path/to/report.html
 ```
 
 ## Usage
@@ -158,6 +175,56 @@ checker = Checker()
 findings = checker.check_file("report.html")
 print(checker.format_report(findings))
 ```
+
+## Web GUI (v1.1.0)
+
+Launch the web GUI with `html-security-checker --gui`, or use `--gui-port 8768` to specify the port. The checker opens a modern dark web UI in your browser at `http://localhost:PORT`.
+
+Enter a file path or drag-and-drop an HTML file, then view color-coded results (errors, warnings, and info) in a table. No internet connection is needed—the GUI runs entirely locally. It binds to localhost only and is not accessible from other machines.
+
+```powershell
+html-security-checker --gui
+html-security-checker --gui --gui-port 9000
+```
+
+## Email Alerts (v1.1.0) — Optional & Opt-In
+
+Email alerts are **strictly opt-in**—scanning without an explicit `--email` flag or the GUI checkbox will **NEVER** send email. Alerts are sent only when errors or warnings are found; info-only findings do not trigger alerts.
+
+Configure email alerts through environment variables, CLI flags, or the GUI. The supported environment variables are:
+
+- `HSC_SMTP_HOST`
+- `HSC_SMTP_PORT`
+- `HSC_SMTP_USER`
+- `HSC_SMTP_PASS`
+- `HSC_SMTP_FROM`
+- `HSC_SMTP_TLS`
+
+The email configuration file is stored at `~/.html-security-checker/email.json`.
+
+> ⚠️ **Warning**: The config file stores SMTP credentials in plaintext. Use environment variables for better security.
+
+### CLI examples
+
+```bash
+# Send scan results to security team
+html-security-checker report.html --email security@example.com
+
+# Send a test email to verify config
+html-security-checker --email-test security@example.com
+
+# Override SMTP settings via CLI
+html-security-checker report.html --email security@example.com \
+  --smtp-host smtp.gmail.com --smtp-port 587 \
+  --smtp-user user@gmail.com --smtp-pass app-password \
+  --smtp-from user@gmail.com
+```
+
+When using Gmail, enable 2FA and create an App Password — your regular password won't work.
+
+For Office 365, use `smtp.office365.com` port 587 with your email and app password.
+
+In the GUI, expand the 'Email alerts' section, check 'Enable email alerts', fill in SMTP details, click 'Save Config', then 'Send Test Email' to verify.
 
 ## Git Hooks (Automated Enforcement)
 
