@@ -26,7 +26,7 @@ details summary{cursor:pointer;font-weight:700;color:var(--cyan)}.toggle{display
 @media(max-width:700px){.row{align-items:stretch;flex-direction:column}.grid{grid-template-columns:1fr}.grid .wide{grid-column:auto}.wrap{padding-top:22px}.card{padding:15px}}
 </style></head><body><main class="wrap">
 <header><h1>HTML Report Security Checker</h1><span class="version" id="version">v...</span></header>
-<section class="card" id="scanner"><div class="row"><input class="path" id="path" placeholder="C:\path\to\report.html or folder"><button id="scan">Scan</button></div><div class="drop" id="drop"><strong>Drop HTML files here</strong><br><span class="hint">Your browser supplies the file name; for local scanning, enter its full path above.</span></div><div class="status" id="status"></div></section>
+<section class="card" id="scanner"><div class="row"><input class="path" id="path" placeholder="C:\path\to\report.html or folder"><button class="secondary" id="browse">Browse</button><button id="scan">Scan</button></div><input type="file" id="fileInput" accept=".html,.htm" style="display:none"><div class="drop" id="drop"><strong>Drop HTML files here</strong><br><span class="hint">Click Browse to pick a file, drag &amp; drop, or enter a full path above.</span></div><div class="status" id="status"></div></section>
 <section class="card hidden" id="results"><div class="row"><h2 style="flex:1;margin:0">Scan Results</h2><button class="secondary" id="again">Scan Another</button></div><div class="badges"><span class="badge error" id="errors"></span><span class="badge warning" id="warnings"></span><span class="badge info" id="infos"></span></div><div class="table-wrap"><table><thead><tr><th>Check ID</th><th>Severity</th><th>File</th><th>Line</th><th>Description</th><th>Fix</th></tr></thead><tbody id="findings"></tbody></table><div class="empty hidden" id="clean">No security issues found.</div></div></section>
 <section class="card"><details><summary>Email alerts</summary><label class="toggle"><input type="checkbox" id="emailOn"> Enable email alerts</label><div id="emailPanel" class="hidden"><div class="grid"><input id="host" placeholder="SMTP host"><input id="port" type="number" value="587" placeholder="Port"><input id="user" placeholder="Username"><input id="password" type="password" placeholder="Password"><input id="from" class="wide" placeholder="From address"><input id="to" placeholder="Recipient"><label class="toggle"><input id="tls" type="checkbox" checked> Use TLS</label></div><div class="actions"><button id="save">Save Config</button><button class="secondary" id="test">Send Test Email</button><button class="secondary" id="report" disabled>Email Report</button></div><div class="status" id="emailStatus"></div></div></details></section>
 <footer>HTML Report Security Checker &mdash; github.com/zuwasi/html-report-security-checker</footer></main>
@@ -35,9 +35,12 @@ const $=id=>document.getElementById(id);let current=[];
 function esc(v){const d=document.createElement('div');d.textContent=v??'';return d.innerHTML}
 async function api(url,options={}){const r=await fetch(url,{headers:{'Content-Type':'application/json'},...options});let data;try{data=await r.json()}catch{data={error:'Invalid server response'}}if(!r.ok)throw new Error(data.error||`Request failed (${r.status})`);return data}
 async function scan(path){$('status').textContent='Scanning...';$('scan').disabled=true;try{const directory=/[\\\/]$/.test(path);const data=await api(directory?'/api/scan-directory':'/api/scan',{method:'POST',body:JSON.stringify({path})});current=data.findings||data;render(current)}catch(e){$('status').textContent=e.message}finally{$('scan').disabled=false}}
+async function scanContent(file){$('status').textContent='Scanning '+file.name+'...';$('scan').disabled=true;try{const text=await file.text();const data=await api('/api/scan-content',{method:'POST',body:JSON.stringify({filename:file.name,content:text})});current=data.findings||data;render(current)}catch(e){$('status').textContent=e.message}finally{$('scan').disabled=false}}
 function render(items){const count=s=>items.filter(x=>x.severity===s).length;$('errors').textContent=`${count('error')} Errors`;$('warnings').textContent=`${count('warning')} Warnings`;$('infos').textContent=`${count('info')} Info`;$('findings').innerHTML=items.map(x=>`<tr class="${esc(x.severity)}"><td>${esc(x.check_id)}</td><td class="sev">${esc(x.severity)}</td><td>${esc(x.file_path)}</td><td>${esc(x.line_number)}</td><td>${esc(x.explanation)}</td><td>${esc(x.fix_suggestion)}</td></tr>`).join('');$('clean').classList.toggle('hidden',items.length>0);$('results').classList.remove('hidden');$('scanner').classList.add('hidden');$('report').disabled=false;$('status').textContent=''}
 $('scan').onclick=()=>{const p=$('path').value.trim();if(p)scan(p);else $('status').textContent='Enter a file or directory path.'};$('path').onkeydown=e=>{if(e.key==='Enter')$('scan').click()};$('again').onclick=()=>{$('results').classList.add('hidden');$('scanner').classList.remove('hidden');$('path').focus()};
-const drop=$('drop');['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('over')}));drop.ondrop=e=>{const f=e.dataTransfer.files[0];if(f){$('path').value=f.path||f.name;scan($('path').value)}};
+const drop=$('drop');['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('over')}));['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('over')}));drop.ondrop=e=>{const f=e.dataTransfer.files[0];if(f){if(f.path){$('path').value=f.path;scan(f.path)}else{scanContent(f)}}};
+$('browse').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=e=>{const f=e.target.files[0];if(f){$('path').value=f.name;scanContent(f)}};
 $('emailOn').onchange=()=>{$('emailPanel').classList.toggle('hidden',!$('emailOn').checked)};
 function cfg(){return{host:$('host').value,port:Number($('port').value),user:$('user').value,password:$('password').value,from:$('from').value,tls:$('tls').checked}}
 function msg(v){$('emailStatus').textContent=v}
@@ -113,15 +116,25 @@ class GUIHandler(http.server.BaseHTTPRequestHandler):
         try:
             data = self._body()
             path = urlparse(self.path).path
-            if path in ("/api/scan", "/api/scan-directory"):
-                target = Path(data.get("path", "")).expanduser()
-                expected = target.is_dir() if path.endswith("directory") else target.is_file()
-                if not expected:
-                    self._json({"error": "File not found"}, 404)
-                    return
-                checker = Checker()
-                findings = checker.check_directory(target) if target.is_dir() else checker.check_file(target)
-                self._json({"findings": [_finding_dict(item) for item in findings]})
+            if path in ("/api/scan", "/api/scan-directory", "/api/scan-content"):
+                if path == "/api/scan-content":
+                    filename = data.get("filename", "uploaded.html")
+                    content = data.get("content", "")
+                    if not content:
+                        self._json({"error": "No content provided"}, 400)
+                        return
+                    checker = Checker()
+                    findings = checker.check_content(content, Path(filename))
+                    self._json({"findings": [_finding_dict(item) for item in findings]})
+                else:
+                    target = Path(data.get("path", "")).expanduser()
+                    expected = target.is_dir() if path.endswith("directory") else target.is_file()
+                    if not expected:
+                        self._json({"error": "File not found"}, 404)
+                        return
+                    checker = Checker()
+                    findings = checker.check_directory(target) if target.is_dir() else checker.check_file(target)
+                    self._json({"findings": [_finding_dict(item) for item in findings]})
             elif path == "/api/email-config":
                 config = EmailConfig(
                     smtp_host=data.get("host", ""),

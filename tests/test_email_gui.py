@@ -291,5 +291,43 @@ def test_gui_body_size_limit() -> None:
     assert b"exceeds 10 MB" in body
 
 
+def test_gui_scan_content() -> None:
+    """Verify /api/scan-content scans uploaded HTML content."""
+    sample = (SAMPLES_DIR / "leaked_secrets.html").read_text(encoding="utf-8")
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/scan-content", {
+            "filename": "leaked_secrets.html",
+            "content": sample,
+        })
+    data = json.loads(body)
+    assert status == 200
+    assert len(data["findings"]) > 0
+    assert data["findings"][0]["severity"] == "error"
+
+
+def test_gui_scan_content_empty() -> None:
+    """Verify /api/scan-content rejects empty content."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/api/scan-content", {
+            "filename": "empty.html",
+            "content": "",
+        })
+    assert status == 400
+    assert json.loads(body)["error"] == "No content provided"
+
+
+def test_check_content_matches_check_file() -> None:
+    """Verify check_content produces the same findings as check_file."""
+    sample_path = SAMPLES_DIR / "leaked_secrets.html"
+    content = sample_path.read_text(encoding="utf-8")
+    file_findings = Checker().check_file(sample_path)
+    content_findings = Checker().check_content(content, sample_path)
+    assert len(file_findings) == len(content_findings)
+    for f, c in zip(file_findings, content_findings):
+        assert f.check_id == c.check_id
+        assert f.severity is c.severity
+        assert f.line_number == c.line_number
+
+
 # Keep imports required by the public GUI API contract covered by this module.
 assert Checker and start_gui

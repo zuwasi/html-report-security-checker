@@ -50,10 +50,9 @@ class Checker:
         """Load the built-in check definitions."""
         self.check_definitions: list[CheckDefinition] = CHECK_DEFINITIONS
 
-    def check_file(self, file_path: Path) -> list[Finding]:
-        """Run all checks against one HTML file."""
+    def check_content(self, content: str, file_path: Path) -> list[Finding]:
+        """Run all checks against HTML content string."""
         path = Path(file_path)
-        content = path.read_text(encoding="utf-8")
         findings: list[Finding] = []
 
         for definition in self.check_definitions:
@@ -74,6 +73,12 @@ class Checker:
                     )
 
         return sorted(findings, key=lambda item: (item.line_number, item.check_id))
+
+    def check_file(self, file_path: Path) -> list[Finding]:
+        """Run all checks against one HTML file."""
+        path = Path(file_path)
+        content = path.read_text(encoding="utf-8")
+        return self.check_content(content, path)
 
     def check_directory(
         self, dir_path: Path, pattern: str = "**/*.html"
