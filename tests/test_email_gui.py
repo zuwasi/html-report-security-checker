@@ -402,5 +402,41 @@ def test_gui_html_has_markdown_filename_derivation() -> None:
     assert b"mdName" in body
 
 
+def test_gui_html_has_editor_toolbar() -> None:
+    """Verify the editor modal has toolbar controls."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"ed-toolbar" in body
+    assert b"id=\"edOpen\"" in body
+    assert b"id=\"edSave\"" in body
+    assert b"id=\"edSaveAs\"" in body
+    assert b"id=\"edFindToggle\"" in body
+    assert b"id=\"edGoto\"" in body
+
+
+def test_gui_html_has_find_replace_bar() -> None:
+    """Verify the find/replace bar exists with inputs and buttons."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"ed-findbar" in body
+    assert b"id=\"edFindInput\"" in body
+    assert b"id=\"edReplaceInput\"" in body
+    assert b"id=\"edReplaceAll\"" in body
+    assert b"id=\"edFindNext\"" in body
+
+
+def test_gui_html_has_editor_keyboard_shortcuts() -> None:
+    """Verify keyboard shortcuts are wired in the editor."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"Ctrl+H" in body or b"ctrlKey" in body
+    assert b"doFind" in body
+    assert b"doReplace" in body
+    assert b"doReplaceAll" in body
+
+
 # Keep imports required by the public GUI API contract covered by this module.
 assert Checker and start_gui
