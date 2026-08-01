@@ -43,6 +43,40 @@ cd html-report-security-checker
 pip install -e .
 ```
 
+## Standalone Executable (No Python Required)
+
+Download the pre-built binary for your platform from [GitHub Releases](https://github.com/zuwasi/html-report-security-checker/releases/latest):
+
+| Platform | Download |
+|----------|----------|
+| Windows x64 | [html-security-checker-windows-x64.exe.zip](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-windows-x64.exe.zip) |
+| Linux x64 | [html-security-checker-linux-x64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-linux-x64.tar.gz) |
+| macOS x64 | [html-security-checker-macos-x64.tar.gz](https://github.com/zuwasi/html-report-security-checker/releases/latest/download/html-security-checker-macos-x64.tar.gz) |
+
+### Windows
+
+Extract the ZIP archive, then run:
+
+```powershell
+.\html-security-checker-windows-x64.exe path\to\report.html
+```
+
+### Linux
+
+```bash
+tar xzf html-security-checker-linux-x64.tar.gz
+chmod +x html-security-checker-linux-x64
+./html-security-checker-linux-x64 path/to/report.html
+```
+
+### macOS
+
+```bash
+tar xzf html-security-checker-macos-x64.tar.gz
+chmod +x html-security-checker-macos-x64
+./html-security-checker-macos-x64 path/to/report.html
+```
+
 ## Usage
 
 ### Scan a single file

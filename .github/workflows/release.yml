@@ -1,0 +1,151 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: html-security-checker-windows-x64.exe
+            archive: zip
+          - os: ubuntu-latest
+            artifact: html-security-checker-linux-x64
+            archive: tar.gz
+          - os: macos-latest
+            artifact: html-security-checker-macos-x64
+            archive: tar.gz
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          pip install pyinstaller
+          pip install -e .
+
+      - name: Build executable
+        run: pyinstaller html-security-checker.spec --noconfirm --clean
+
+      - name: Rename executable
+        shell: bash
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            mv dist/html-security-checker.exe dist/${{ matrix.artifact }}
+          else
+            mv dist/html-security-checker dist/${{ matrix.artifact }}
+            chmod +x dist/${{ matrix.artifact }}
+          fi
+
+      - name: Test executable
+        shell: bash
+        run: |
+          ./dist/${{ matrix.artifact }} tests/samples/clean.html
+          ./dist/${{ matrix.artifact }} --version
+
+      - name: Create archive (zip)
+        if: matrix.archive == 'zip'
+        shell: bash
+        run: |
+          cd dist
+          7z a ${{ matrix.artifact }}.zip ${{ matrix.artifact }}
+
+      - name: Create archive (tar.gz)
+        if: matrix.archive != 'zip'
+        shell: bash
+        run: |
+          cd dist
+          tar czf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Release ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            # HTML Report Security Checker
+
+            ## Downloads
+
+            | Platform | File |
+            |----------|------|
+            | Windows x64 | `html-security-checker-windows-x64.exe.zip` |
+            | Linux x64 | `html-security-checker-linux-x64.tar.gz` |
+            | macOS x64 | `html-security-checker-macos-x64.tar.gz` |
+
+            ## Quick Start
+
+            ### Windows
+            ```
+            html-security-checker-windows-x64.exe path/to/report.html
+            ```
+
+            ### Linux / macOS
+            ```
+            tar xzf html-security-checker-linux-x64.tar.gz
+            ./html-security-checker-linux-x64 path/to/report.html
+            ```
+
+            ## The 9 Security Checks
+
+            | ID | Check | Severity |
+            |----|-------|----------|
+            | SEC-01 | Secrets in comments | Error |
+            | SEC-02 | Hardcoded passwords | Error |
+            | SEC-03 | Tracking & network calls | Warning |
+            | SEC-04 | Missing SRI | Warning |
+            | SEC-05 | Missing CSP | Info |
+            | SEC-06 | YouTube embeds | Warning |
+            | SEC-07 | AI prompt leakage | Error |
+            | SEC-08 | Unsafe _blank links | Info |
+            | SEC-09 | Unversioned CDN | Warning |
+
+            No Python installation required. The executable is fully self-contained.
+
+            ---
+            [Presentation: An Answer to Tannenbaum's Concern](https://zuwasi.github.io/Public-html-pages/answer-to-tannenbaum-concern.html)
+          files: artifacts/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

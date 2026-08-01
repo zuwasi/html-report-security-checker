@@ -13,3 +13,6 @@ htmlcov/
 .venv/
 venv/
 ENV/
+
+# PyInstaller build output
+*.spec.bak
