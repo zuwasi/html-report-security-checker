@@ -13,6 +13,52 @@ Built by the [Engineering Software Lab (ESL)](https://eswlab.com), the checker i
 📖 See the presentation that explains the full story:  
 https://zuwasi.github.io/Public-html-pages/answer-to-tannenbaum-concern.html
 
+## ⚠️ The Self-Attribution Problem: Why Not Just Ask AI to Review Its Own Output?
+
+**If Claude (or ChatGPT) generated the HTML, asking the same AI to review it is like asking a developer to review their own code — they share the same blind spots in both roles.**
+
+### The problem with AI-reviewing-AI
+
+| Risk | What happens |
+|------|-------------|
+| **Shared blind spots** | If the AI doesn't consider `password = "admin123"` dangerous in a demo context, it won't flag it during review either |
+| **Pattern reinforcement** | The AI may consistently embed prompts in comments and consistently not consider that a leak — because it "knows" it's just context |
+| **False confidence** | The AI says "I reviewed it, it's clean" — but it reviewed it through the same lens that created it |
+| **Adversarial resistance** | If the HTML contains subtle prompt injection, the AI reviewer might follow it instead of catching it |
+
+### Why this tool is different
+
+**HTML Report Security Checker uses pure pattern matching — no AI, no LLM, no bias.**
+
+It doesn't "think" about whether something is intentional. It doesn't reason about context. It just matches strings. If `sk-proj-abc123` is in a comment, it flags it **every time**, regardless of whether an AI thinks it's "just an example" or a real secret.
+
+This is exactly why it catches things that AI review misses:
+
+| Finding | AI Reviewer | This Tool |
+|---------|------------|-----------|
+| Password `86999` in a comment | ❌ Missed — "just a 5-digit number" | ✅ **Flagged** — SEC-01 |
+| Password `rty768` in JavaScript | ❌ Missed — "short string, not a real secret" | ✅ **Flagged** — SEC-02 |
+| Leaked system prompt in comment | ❌ Missed — "that's just context I wrote" | ✅ **Flagged** — SEC-07 |
+| Analytics tracking pixel | ❌ Missed — "that's a standard fetch call" | ✅ **Flagged** — SEC-03 |
+
+### The right pipeline: diverse tools, not AI-reviewing-AI
+
+```
+AI generates HTML     ← might introduce issues (blind spots)
+         ↓
+Regex checker scans   ← NO AI bias — pure mechanical pattern matching
+         ↓
+Secrets scanner       ← different technology (Endor Labs, Trivy, etc.)
+         ↓
+Human review          ← ultimate judgment
+```
+
+**Diverse tools catch what each other miss. That's defense in depth.**
+
+> 💡 **Key takeaway**: This tool exists *because* AI can't reliably review its own output. It's the one layer in your pipeline that is completely immune to the self-attribution problem — it contains no AI at all.
+
+---
+
 ## The 9 Security Checks
 
 | ID | Check | Severity | What it catches |
