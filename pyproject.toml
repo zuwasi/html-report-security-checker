@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta:__legacy__"
 
 [project]
 name = "html-report-security-checker"
-version = "1.1.0"
+version = "1.1.1"
 description = "Scan AI-generated HTML reports and presentations for security risks before publishing"
 readme = "README.md"
 license = {text = "MIT"}

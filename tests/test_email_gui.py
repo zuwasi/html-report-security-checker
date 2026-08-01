@@ -376,5 +376,31 @@ def test_gui_file_save_not_found() -> None:
     assert status == 404
 
 
+def test_gui_html_has_double_click_hint() -> None:
+    """Verify the HTML page shows the double-click instruction."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"Double-click to see code lines" in body
+
+
+def test_gui_html_has_uploaded_file_caching() -> None:
+    """Verify JS caches uploaded file content for the editor."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"uploadedFile" in body
+    assert b"editIsUploaded" in body
+
+
+def test_gui_html_has_markdown_filename_derivation() -> None:
+    """Verify JS derives the export filename from the original HTML file."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"security-findings.md" in body
+    assert b"mdName" in body
+
+
 # Keep imports required by the public GUI API contract covered by this module.
 assert Checker and start_gui
