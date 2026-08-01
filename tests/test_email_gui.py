@@ -438,5 +438,15 @@ def test_gui_html_has_editor_keyboard_shortcuts() -> None:
     assert b"doReplaceAll" in body
 
 
+def test_gui_html_has_line_number_gutter() -> None:
+    """Verify the editor has a line-number gutter that syncs with scroll."""
+    with _running_server() as (_, port):
+        status, _, body = _request(port, "/")
+    assert status == 200
+    assert b"ed-gutter" in body
+    assert b"id=\"edGutter\"" in body
+    assert b"updateLineNumbers" in body
+
+
 # Keep imports required by the public GUI API contract covered by this module.
 assert Checker and start_gui
